@@ -50,7 +50,7 @@ class user::virtual {
                         comment =>      $realname,
                         password =>     $pass,
                         managehome =>   true,
-                        require =>      [Group[$groups,$default_groups]] ;
+                        require =>      [Package["libshadow-ruby1.8","lsb-release"],Group[$groups,$default_groups]] ;
                 }
 			 	file {
 					"/home/$title" :
