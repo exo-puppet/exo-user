@@ -6,27 +6,14 @@ class user::virtual {
 				gid     =>   6000,
 				allowdupe => false,
 				ensure => "present" ;
-		} 
-	 	group {	"swf":
-				gid     =>   6001,
-				allowdupe => false,
-				ensure => "present" ;
-		} 
-	 	group {	"qaf":
-				gid     =>   6002,
-				allowdupe => false,
-				ensure => "present" ;
-		} 
-	 	group {	"itop":
-				gid     =>   6003,
-				allowdupe => false,
-				ensure => "present" ;
-		} 
-	 	group {	"sysadmin":
-				gid     =>   6004,
-				allowdupe => false,
-				ensure => "present" ;
-		} 
+		}
+ 		define group ($gid,$ensure="present"){
+		 	group {	$title:
+					gid     =>   $gid,
+					allowdupe => false,
+					ensure => "present" ;
+	 		} 			
+ 		} 
         define user ($uid,$gid,$pass,$groups,$realname="",$email="",$sshkey="",$ensure="present") {
         	    # Default groups for all accounts
         	    $default_groups = ["user"]
