@@ -14,7 +14,7 @@ class user::virtual {
 					ensure => "present" ;
 	 		} 			
  		} 
-        define user ($uid,$gid,$pass="",$groups=[],$realname="",$email="",$sshkey="",$ensure="present") {
+        define user ($uid,$gid,$pass="",$groups=[],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
         	    # Default groups for all accounts
         	    $default_groups = ["user"]
 			    # This case statement will allow disabling an account by passing
@@ -75,26 +75,35 @@ class user::virtual {
 							group => "$home_group" ;
 					}                	
                 }
-                if ( $sshkey != "" ) {
-					file {
-						"/home/$title/.ssh" :
-							ensure => $ensure ? {
-							                        present => directory,
-							                        absent  => absent,
-							                    },
-							force =>  true,
-							require => [User["$title"],File["/home/$title"]],
-							owner => "$home_owner",
-							group => "$home_group" ;
-					}
-					ssh_authorized_key { $title:
-					    ensure  =>      $ensure,
-					    type    =>      "ssh-rsa",
-					    key     =>      "$sshkey",
-					    user    =>      "$home_owner",
-					    require =>      [User["$title"],File["/home/$title/.ssh"]],
-					    name    =>      "$title",
-					}
+
+				file {
+					"/home/$title/.ssh" :
+						ensure => $ensure ? {
+						                        present => directory,
+						                        absent  => absent,
+						                    },
+						force =>  true,
+						require => [User["$title"],File["/home/$title"]],
+						owner => "$home_owner",
+						group => "$home_group" ,
+				}
+
+				if( empty( $user_sshkeys ) == false){
+				  record_key {$user_sshkeys: user=>$title, keys=>$sshkeys_definitions}
                 }
+        }
+}
+define sshauthkeys ($keys) {
+        $keys2=regsubst($keys,"\$","-$name")
+        user::sshauthkeys-helper { $keys2: user => $name, sshkeys => $keys }
+}
+
+define record_key ($user,$keys,$ensure='present') {
+        ssh_authorized_key { "puppet:${name}":
+          ensure => $ensure,
+          type => $keys["${name}"]["type"],
+          key => $keys["${name}"]["key"],
+          user => "${user}",
+          require => [User["$user"],File["/home/$user/.ssh"]],
         }
 }
