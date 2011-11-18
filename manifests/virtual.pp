@@ -14,7 +14,7 @@ class user::virtual {
 					ensure => "present" ;
 	 		} 			
  		} 
-        define user ($uid,$gid,$pass="",$groups=[],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
+        define user ($uid,$gid,$pass="",$groups=["user"],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
         	    # Default groups for all accounts
         	    $default_groups = ["user"]
 			    # This case statement will allow disabling an account by passing
