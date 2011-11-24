@@ -1,3 +1,5 @@
+include stdlib
+
 # virtual.pp
 #
 # People accounts of interest as virtual resources
@@ -11,7 +13,7 @@ class user::virtual {
 		 	group {	$title:
 					gid     =>   $gid,
 					allowdupe => false,
-					ensure => "present" ;
+					ensure => $ensure ;
 	 		} 			
  		} 
         define user ($uid,$gid,$pass="",$groups=["user"],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
@@ -50,7 +52,7 @@ class user::virtual {
                         comment =>      $realname,
                         password =>     $pass,
                         managehome =>   true,
-                        require =>      [Package["libshadow-ruby1.8","lsb-release"],Group[$groups,$default_groups]] ;
+                        require =>      [Group[$groups,$default_groups]] ;
                 }
 			 	file {
 					"/home/$title" :
@@ -58,6 +60,7 @@ class user::virtual {
 						                        present => directory,
 						                        absent  => absent,
 						                    },
+						force => true,
 						require => User["$title"],
 						owner => $home_owner,
 						group => $home_group ;
@@ -89,20 +92,20 @@ class user::virtual {
 				}
 
 				if( empty( $user_sshkeys ) == false){
-				  record_key {$user_sshkeys: user=>$title, keys=>$sshkeys_definitions}
+			      $keys2=regsubst($user_sshkeys,"\$","-$name")
+				  record_key {$keys2: user=>$title, keys_bucket=>$sshkeys_definitions, user_ensure=>$ensure}
                 }
         }
 }
-define sshauthkeys ($keys) {
-        $keys2=regsubst($keys,"\$","-$name")
-        user::sshauthkeys-helper { $keys2: user => $name, sshkeys => $keys }
-}
-
-define record_key ($user,$keys,$ensure='present') {
-        ssh_authorized_key { "puppet:${name}":
-          ensure => $ensure,
-          type => $keys["${name}"]["type"],
-          key => $keys["${name}"]["key"],
+define record_key ($user,$keys_bucket,$user_ensure) {
+	    $name2=regsubst($name,"-${user}\$","")
+        ssh_authorized_key { "puppet:${name2}:${user}":
+          ensure => $user_ensure ? {
+          	"absent" => "absent",
+          	default => $keys_bucket["${name2}"]["ensure"],
+          	},
+          type => $keys_bucket["${name2}"]["type"],
+          key => $keys_bucket["${name2}"]["key"],
           user => "${user}",
           require => [User["$user"],File["/home/$user/.ssh"]],
         }
