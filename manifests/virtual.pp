@@ -1,8 +1,16 @@
+# Required to have access to functions like empty(aTable)
 include stdlib
 
-# virtual.pp
+# User class
 #
-# People accounts of interest as virtual resources
+# == Authors
+#
+# Arnaud Heritier <aheritier@exoplatform.com\>
+#
+# == Copyright
+#
+# Copyright 2011 eXo platform.
+#
 class user::virtual {
 	 	group {	"user":
 				gid     =>   6000,
@@ -16,6 +24,67 @@ class user::virtual {
 					ensure => $ensure ;
 	 		} 			
  		} 
+ 		
+# People accounts of interest as virtual resources
+#
+# == Parameters
+#
+# [*namevar*]
+#   The name of the account to create
+# [*realname*]
+#   The real name of the user or a description of the account usage.
+# [*uid*]
+#   The account identifier.
+# [*gid*]
+#   The group identifier.
+# [*groups*]
+#   The array of group names. 
+# [*pass*]
+#   The shadowed password.
+# [*user_sshkeys*]
+#   An array of public key indentifiers to configure in authorized keys of the user account.
+# [*sshkeys_definitions*]
+#   A map of public ssh keys descriptions.
+# [*email*]
+#   The email to forward accounts emails
+# [*ensure*]
+#   present : to create the account
+#   absent : to deactivate the account 
+#
+# == Variables
+#
+# None
+#
+# == Examples
+#
+# To define a set of SSH keys :
+#    $sshkeys_bucket = {
+#        "bart@laptop" => {
+#            "type" => "ssh-rsa", 
+#            "key" => 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+#            "ensure" => "present",
+#        },						
+#    }
+#
+# To define a user :
+#
+#    @user::virtual::user {
+#        "bart" :
+#            realname => "Bart SIMPSON",
+#            uid => "6666",
+#            gid => "6666",
+#            groups => ["comics", "yellow"],
+#            pass => 'XXXXXXXXXXX',
+#            user_sshkeys => ["bart@laptop"],
+#            sshkeys_definitions => $sshkeys_bucket,
+#            email => "bart@simpson.com",
+#            ensure => "present"
+#    }
+#
+# To instanciate a user :
+#
+#    realize(User::Virtual::User[bart])
+#
         define user ($uid,$gid,$pass="",$groups=["user"],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
         	    # Default groups for all accounts
         	    $default_groups = ["user"]
@@ -97,6 +166,34 @@ class user::virtual {
                 }
         }
 }
+
+# Description of resource here
+#
+# == Parameters
+#
+# [*namevar*]
+#   The identifier of the key to install in formet $keyId-$user
+#
+# [*user*]
+#   The user account where the key must be installed. The keyId to install will be extracted from namevar 
+#
+# [*keys_bucket*]
+#   A map of public ssh keys descriptions.
+#
+# [*user_ensure*]
+#   present : If the user account has to be present
+#   absent : If the user account has to be absent
+#
+# == Examples
+#
+# Provide some examples on how to use this type:
+#
+#    record_key {
+#        $keys2: user=>$title, 
+#        keys_bucket=>$sshkeys_definitions, 
+#        user_ensure=>$ensure
+#    }
+#
 define record_key ($user,$keys_bucket,$user_ensure) {
 	    $name2=regsubst($name,"-${user}\$","")
         ssh_authorized_key { "puppet:${name2}:${user}":
