@@ -126,14 +126,18 @@ class user::virtual {
     	        present: { User <| title == "$title" |> { require => Group["$title"] } }
     	        absent: { Group <| title == "$title" |> { require => User["$title"] } }
     	    }
-            # Create user home
+            # Create user home (set recursively the owner to root when an account is removed)
     	 	file {
     			"/home/$title" :
     				ensure => directory,
     				force => true,
     				require => User["$title"],
     				owner => $home_owner,
-    				group => $home_group ;
+    				group => $home_group,
+    				recurse => $ensure ? {
+                                            present => false,
+                                            absent  => true,
+                                        },
     		}
     	    # Create the user				
             user { $title:
@@ -176,9 +180,9 @@ class user::virtual {
     				group => "$home_group" ,
     		}
             # Record public SSH Keys
-    		if( empty( $user_sshkeys ) == false){
+    		if( $ensure=="present" and empty( $user_sshkeys ) == false){
     	      $keys2=regsubst($user_sshkeys,"\$","-$name")
-    		  record_key {$keys2: user=>$title, keys_bucket=>$sshkeys_definitions, user_ensure=>$ensure}
+    		  record_key {$keys2: user=>$title, keys_bucket=>$sshkeys_definitions}
             }
             
     }
@@ -196,31 +200,23 @@ class user::virtual {
     # [*keys_bucket*]
     #   A map of public ssh keys descriptions.
     #
-    # [*user_ensure*]
-    #   present : If the user account has to be present
-    #   absent : If the user account has to be absent
-    #
     # == Examples
     #
     # Provide some examples on how to use this type:
     #
     #    record_key {
     #        $keys2: user=>$title, 
-    #        keys_bucket=>$sshkeys_definitions, 
-    #        user_ensure=>$ensure
+    #        keys_bucket=>$sshkeys_definitions
     #    }
     #
-    define record_key ($user,$keys_bucket,$user_ensure) {
+    define record_key ($user,$keys_bucket) {
     	    $name2=regsubst($name,"-${user}\$","")
             ssh_authorized_key { "puppet:${name2}:${user}":
-              ensure => $user_ensure ? {
-              	"absent" => "absent",
-              	default => $keys_bucket["${name2}"]["ensure"],
-              	},
+              ensure => $keys_bucket["${name2}"]["ensure"],
               type => $keys_bucket["${name2}"]["type"],
               key => $keys_bucket["${name2}"]["key"],
               user => "${user}",
-              require => [User["$user"],File["/home/$user/.ssh"]],
+              require => [File["/home/$user/.ssh"]],
             }
     }        
 }
