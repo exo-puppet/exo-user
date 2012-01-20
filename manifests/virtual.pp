@@ -98,9 +98,7 @@ class user::virtual {
     #
     #    realize(User::Virtual::User[bart])
     #
-    define user ($uid,$gid,$pass="",$groups=["user"],$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
-    	    # Default groups for all accounts
-    	    $default_groups = ["user"]
+    define user ($uid,$gid,$pass="",$groups=UNSET,$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
     	    # This case statement will allow disabling an account by passing
     	    # ensure => absent, to set the home directory ownership to root.
     	    case $ensure {
@@ -113,8 +111,10 @@ class user::virtual {
     	            $home_group = "root"
     	        }
     	    }        	
-            # Realize required groups
-            realize(User::Virtual::Group[$groups,$default_groups],)
+    	    if($groups != UNSET){
+                # Realize required groups
+                realize(User::Virtual::Group[$groups])
+            }
     	    # Create a dedicated group for the user
     	 	group {	$title:
     				gid     =>      $gid,
@@ -144,14 +144,20 @@ class user::virtual {
                     ensure  =>      $ensure,
                     uid     =>      $uid,
                     gid     =>      $gid,
-                    groups  =>      [$groups,$default_groups],
+                    groups  =>      $groups ? {
+                                            UNSET => [],
+                                            default  => $groups,
+                                        },
                     membership =>   inclusive, # specify the complete list of groups (remove not listed here)
                     shell   =>      "/bin/bash",
                     home    =>      "/home/$title",
                     comment =>      $realname,
                     password =>     $pass,
                     managehome =>   true,
-                    require =>      [User::Virtual::Group[$groups,$default_groups]] ;
+                    require =>      $groups ? {
+                                            UNSET => [],
+                                            default  => [User::Virtual::Group[$groups]],
+                                        },
             }
             # Create email forward
             if ( $email != "" ) {
@@ -162,7 +168,7 @@ class user::virtual {
     				                        absent  => absent,
     				                    },
     					content => "$email",
-    					require => User["$title"],
+    					require => [User["$title"],File["/home/$title"]],
     					owner => "$home_owner",
     					group => "$home_group" ;
     			}                	
