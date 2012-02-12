@@ -98,7 +98,7 @@ class user::virtual {
     #
     #    realize(User::Virtual::User[bart])
     #
-    define user ($uid,$gid,$pass="",$groups=UNSET,$realname="",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
+    define user ($uid,$gid,$pass="",$groups=undef,$realname="",$home="/home/$title",$email="",$user_sshkeys=[],$sshkeys_definitions={},$ensure="present") {
     	    # This case statement will allow disabling an account by passing
     	    # ensure => absent, to set the home directory ownership to root.
     	    case $ensure {
@@ -111,13 +111,13 @@ class user::virtual {
     	            $home_group = "root"
     	        }
     	    }        	
-    	    if($groups != UNSET){
+    	    if($groups != undef){
                 # Realize required groups
                 realize(User::Virtual::Group[$groups])
             }
-    	    # Create a dedicated group for the user
+            # Create a dedicated group for the user
     	 	group {	$title:
-    				gid     =>      $gid,
+    				gid     =>  $gid,
     				allowdupe => false,
     				ensure => $ensure ;
     		}				 
@@ -128,7 +128,7 @@ class user::virtual {
     	    }
             # Create user home (set recursively the owner to root when an account is removed)
     	 	file {
-    			"/home/$title" :
+    			"$home" :
     				ensure => directory,
     				force => true,
     				require => User["$title"],
@@ -145,43 +145,43 @@ class user::virtual {
                     uid     =>      $uid,
                     gid     =>      $gid,
                     groups  =>      $groups ? {
-                                            UNSET => [],
+                                            undef => [],
                                             default  => $groups,
                                         },
                     membership =>   inclusive, # specify the complete list of groups (remove not listed here)
                     shell   =>      "/bin/bash",
-                    home    =>      "/home/$title",
+                    home    =>      "$home",
                     comment =>      $realname,
                     password =>     $pass,
                     managehome =>   true,
                     require =>      $groups ? {
-                                            UNSET => [],
+                                            undef => [],
                                             default  => [User::Virtual::Group[$groups]],
                                         },
             }
             # Create email forward
             if ( $email != "" ) {
     		 	file {
-    				"/home/$title/.forward" :
+    				"$home/.forward" :
     					ensure => $ensure ? {
     				                        present => file,
     				                        absent  => absent,
     				                    },
     					content => "$email",
-    					require => [User["$title"],File["/home/$title"]],
+    					require => [User["$title"],File["$home"]],
     					owner => "$home_owner",
     					group => "$home_group" ;
     			}                	
             }
             # Create ~/.ssh directory
     		file {
-    			"/home/$title/.ssh" :
+    			"$home/.ssh" :
     				ensure => $ensure ? {
     				                        present => directory,
     				                        absent  => absent,
     				                    },
     				force =>  true,
-    				require => [User["$title"],File["/home/$title"]],
+    				require => [User["$title"],File["$home"]],
     				owner => "$home_owner",
     				group => "$home_group" ,
     		}
