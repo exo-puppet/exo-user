@@ -188,7 +188,7 @@ class user::virtual {
             # Record public SSH Keys
     		if( $ensure=="present" and empty( $user_sshkeys ) == false){
     	      $keys2=regsubst($user_sshkeys,"\$","-$name")
-    		  record_key {$keys2: user=>$title, keys_bucket=>$sshkeys_definitions}
+    		  record_key {$keys2: user=>$title, keys_bucket=>$sshkeys_definitions, home=>$home}
             }
             
     }
@@ -206,6 +206,9 @@ class user::virtual {
     # [*keys_bucket*]
     #   A map of public ssh keys descriptions.
     #
+    # [*home*]
+    #   Account home directory.
+    #
     # == Examples
     #
     # Provide some examples on how to use this type:
@@ -215,14 +218,30 @@ class user::virtual {
     #        keys_bucket=>$sshkeys_definitions
     #    }
     #
-    define record_key ($user,$keys_bucket) {
-    	    $name2=regsubst($name,"-${user}\$","")
+    define record_key ($user,$keys_bucket,$home) {
+        $name2=regsubst($name,"-${user}\$","")
+        
+        include stdlib
+        
+        $opts=$keys_bucket["${name2}"]["options"] 
+
+        if ("${opts}"=="") {
             ssh_authorized_key { "puppet:${name2}:${user}":
               ensure => $keys_bucket["${name2}"]["ensure"],
               type => $keys_bucket["${name2}"]["type"],
               key => $keys_bucket["${name2}"]["key"],
               user => "${user}",
-              require => [File["/home/$user/.ssh"]],
+              require => [File["$home/.ssh"]],
             }
+        } else {
+            ssh_authorized_key { "puppet:${name2}:${user}":
+              ensure => $keys_bucket["${name2}"]["ensure"],
+              type => $keys_bucket["${name2}"]["type"],
+              key => $keys_bucket["${name2}"]["key"],
+              options => $opts,
+              user => "${user}",
+              require => [File["$home/.ssh"]],
+            }
+        }
     }        
 }
