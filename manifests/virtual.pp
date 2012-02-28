@@ -136,7 +136,7 @@ class user::virtual {
     				group => $home_group,
     				recurse => $ensure ? {
                                             present => false,
-                                            absent  => true,
+                                            default  => true,
                                         },
     		}
     	    # Create the user				
@@ -165,7 +165,7 @@ class user::virtual {
     				"$home/.forward" :
     					ensure => $ensure ? {
     				                        present => file,
-    				                        absent  => absent,
+    				                        default  => absent,
     				                    },
     					content => "$email",
     					require => [User["$title"],File["$home"]],
@@ -178,7 +178,7 @@ class user::virtual {
     			"$home/.ssh" :
     				ensure => $ensure ? {
     				                        present => directory,
-    				                        absent  => absent,
+    				                        default  => absent,
     				                    },
     				force =>  true,
     				require => [User["$title"],File["$home"]],
