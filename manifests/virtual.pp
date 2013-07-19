@@ -206,17 +206,19 @@ class user::virtual {
     }
 
     # Create ~/.ssh directory
-    file { "${home}/.ssh":
-      ensure  => $ensure ? {
-        present => directory,
-        default => absent,
-      },
-      force   => true,
-      require => [
-        User[$title],
-        File[$home]],
-      owner   => $home_owner,
-      group   => $home_group,
+    if !defined(File["${home}/.ssh"]) {
+      file { "${home}/.ssh":
+        ensure  => $ensure ? {
+          present => directory,
+          default => absent,
+        },
+        force   => true,
+        require => [
+          User[$title],
+          File[$home]],
+        owner   => $home_owner,
+        group   => $home_group,
+      }
     }
 
     # Record public SSH Keys
