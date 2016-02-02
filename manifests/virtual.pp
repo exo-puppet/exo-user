@@ -112,6 +112,7 @@ class user::virtual {
     $sshkeys_definitions = {
     }
     ,
+    $shell               = '/bin/bash',
     $ensure              = 'present') {
     # This case statement will allow disabling an account by passing
     # ensure => absent, to set the home directory ownership to root.
@@ -176,7 +177,7 @@ class user::virtual {
         default => $groups,
       },
       membership => inclusive, # specify the complete list of groups (remove not listed here)
-      shell      => '/bin/bash',
+      shell      => $shell,
       home       => $home,
       comment    => $realname,
       password   => $pass,
