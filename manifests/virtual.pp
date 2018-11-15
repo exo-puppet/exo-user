@@ -181,7 +181,7 @@ class user::virtual {
       home       => $home,
       comment    => $realname,
       password   => $pass,
-      managehome => true,
+      managehome => false,
       require    => $groups ? {
         undef   => [
           ],
